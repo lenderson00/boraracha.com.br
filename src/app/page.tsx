@@ -2,14 +2,13 @@ import { Metadata } from "next";
 import ClearStorageLink from "@/components/ClearStorageLink";
 
 export const metadata: Metadata = {
-  title: "BillSplit - Split your bill easily with AI",
+  title: "Boradivir - Divida sua conta facilmente com IA",
   description:
-    "Scan. Tap. Split. Snap the receipt, tap your items, see who owes what. No sign-ups, no math, no drama.",
+    "Escaneie. Toque. Divida. Tire uma foto do recibo, toque nos itens e veja quem deve o quê. Sem cadastros, sem cálculos, sem dor de cabeça.",
   openGraph: {
-    images: "https://usebillsplit.com/og.png",
+    images: "https://boradivir.com.br/og.png",
   },
 };
-
 export default function Home() {
   return (
     <>
@@ -22,12 +21,11 @@ export default function Home() {
           />
 
           <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-medium text-[#1e2939] mb-2">
-              Scan. Tap. Split.
+           <h1 className="text-3xl md:text-4xl font-bold text-[#1e2939] mb-2">
+              Escaneie. Selecione. Divida.
             </h1>
             <p className="text-sm sm:text-base text-[#4a5565] max-w-xs sm:max-w-sm">
-              Snap the receipt, tap your items, see who owes what. No sign-ups,
-              no math, no drama.
+              Tire uma foto do recibo, toque nos itens e veja quem deve o quê. Sem cadastros, sem contas, sem estresse.
             </p>
           </div>
         </div>
@@ -35,11 +33,11 @@ export default function Home() {
         <div className="w-full max-w-xs sm:max-w-sm flex flex-col gap-3">
           <ClearStorageLink href="/app?mode=camera">
             <img src="/camera.svg" className="w-4 h-4" />
-            <p className="text-base font-semibold">Scan Receipt</p>
+            <p className="text-base font-semibold">Escanear Conta</p>
           </ClearStorageLink>
           <ClearStorageLink href="/app?mode=manual" variant="secondary">
             <p className="text-base font-medium text-[#364153]">
-              Enter Manually
+              Digitar Manualmente
             </p>
           </ClearStorageLink>
         </div>

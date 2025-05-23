@@ -27,9 +27,9 @@ export default function RootLayout({
       <body className={`${instrumentSans.variable} antialiased`}>
         <NuqsAdapter>
           <div className="flex flex-col min-h-screen items-center bg-[#f4eeec] w-full mx-auto relative overflow-hidden">
-            <Header />
+            {/* <Header /> */}
             {children}
-            <Footer />
+            {/* <Footer /> */}
           </div>
         </NuqsAdapter>
       </body>

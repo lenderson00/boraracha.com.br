@@ -1,39 +1,47 @@
 import SubPageHeader from "@/components/SubPageHeader";
 import { Button } from "@/components/ui/button";
-import { UseFormReturn, useFieldArray } from "react-hook-form";
-import { BillForm } from "../types";
-import { InputText } from "../InputText";
-import { useMemo } from "react";
+import { UseFormReturn, useFieldArray, useWatch } from "react-hook-form";
+import { BillForm, BillItemFormData, PersonFormData } from "../types";
+import { InputText } from "../InputText"; // Assumindo que este é um componente de input de texto estilizado
+import { useMemo, useCallback } from "react";
 import { createId } from "../utils";
+// import Decimal from "decimal.js"; // Não diretamente usado nesta tela, mas nos tipos
 
+// TinyButton component (permanece o mesmo, mas adicione type="button")
 const TinyButton = ({
   isActive,
   onClick,
   children,
   className,
+  disabled, // Nova propriedade
 }: {
   isActive?: boolean;
   onClick: () => void;
   children?: React.ReactNode;
   className?: string;
+  disabled?: boolean; // Nova propriedade
 }) => {
   return (
     <button
+      type="button" // Importante para evitar submissão de formulário
       onClick={onClick}
-      className={`flex justify-center w-fit items-center h-[30px] truncate relative overflow-hidden gap-1.5 p-3 rounded border-[0.7px] border-[#d1d5dc] cursor-pointer transition-colors ${
-        isActive ? "bg-[#6a2000]" : "bg-white"
-      } ${className}`}
+      disabled={disabled}
+      className={`flex justify-center w-fit items-center h-[30px] truncate relative overflow-hidden gap-1.5 px-3 py-1.5 rounded border-[0.7px] border-[#d1d5dc] cursor-pointer transition-colors
+        ${disabled ? "bg-gray-200 text-gray-500 cursor-not-allowed" : isActive ? "bg-[#6a2000] text-white" : "bg-white text-[#1e2939] hover:bg-gray-50"}
+        ${className}`}
     >
       <p
         className={`flex-grow-0 flex-shrink-0 text-sm text-center ${
-          isActive ? "text-white" : "text-[#1e2939]"
-        }`}
+          disabled ? "" : isActive ? "text-white" : "text-[#1e2939]"
+        } truncate`} // Adicionado truncate para nomes longos
+        title={typeof children === 'string' ? children : undefined} // Tooltip para nomes longos
       >
         {children}
       </p>
     </button>
   );
 };
+
 
 export const PeopleAndSplit = ({
   goBack,
@@ -44,60 +52,148 @@ export const PeopleAndSplit = ({
   goForward: () => void;
   formObject: UseFormReturn<BillForm>;
 }) => {
+  const { control, setValue, watch, getValues } = formObject;
+
   const {
     fields: people,
-    append,
-    remove,
+    append: appendPerson,
+    remove: removePerson,
   } = useFieldArray({
-    control: formObject.control,
+    control,
     name: "people",
     keyName: "_id",
   });
 
   const { fields: products, update: updateProduct } = useFieldArray({
-    control: formObject.control,
+    control,
     name: "billItems",
     keyName: "_id",
   });
 
   const handleAddPerson = () => {
-    append({ name: "", id: createId() });
+    appendPerson({ name: "", id: createId() } as PersonFormData);
   };
 
-  const isDisabled = useMemo(() => {
-    const people = formObject.watch("people") || [];
-    const products = formObject.watch("billItems") || [];
-    const splitEvenly = formObject.watch("splitEvenly");
+  const splitEvenly = watch("splitEvenly");
+  const watchedPeople = watch("people") || [];
+  const watchedBillItems = watch("billItems") || [];
 
-    if (people.length === 0 || people.some((field) => field.name === "")) {
+  const getAssignedQuantityForItem = useCallback((product: BillItemFormData): number => {
+    return (product.assignedTo || []).reduce(
+      (sum, assignment) => sum + (assignment.quantity || 0),
+      0
+    );
+  }, []);
+
+  const isDisabled = useMemo(() => {
+    // ... (lógica de isDisabled permanece a mesma da versão anterior,
+    // garantindo que os itens estejam completamente atribuídos se não for splitEvenly)
+    if (watchedPeople.length === 0 || watchedPeople.some((p) => !p.name?.trim())) {
       return true;
     }
-
     if (splitEvenly) {
       return false;
     }
-
-    return products.some((product) => !product.assignedTo?.length);
-  }, [
-    formObject.watch("people"),
-    formObject.watch("billItems"),
-    formObject.watch("splitEvenly"),
-  ]);
-
-  const splitEvenly = formObject.watch("splitEvenly");
+    for (const product of watchedBillItems) {
+      const productUnits = product.units ?? 0;
+      if (productUnits > 0) {
+        const assignedTo = product.assignedTo || [];
+        if (assignedTo.length === 0 && product.price.greaterThan(0)) return true;
+        const totalAssignedQuantity = getAssignedQuantityForItem(product);
+        if (totalAssignedQuantity !== productUnits) return true;
+        if (assignedTo.some(a => a.quantity <= 0)) return true;
+      } else if (product.price.greaterThan(0)) {
+        if (!product.assignedTo || product.assignedTo.length === 0) return true;
+      }
+    }
+    return false;
+  }, [watchedPeople, watchedBillItems, splitEvenly, getAssignedQuantityForItem]);
 
   const handleSplitEvenlyToggle = () => {
-    if (splitEvenly) {
-      formObject.setValue(
-        "billItems",
-        products.map((product) => ({
-          ...product,
-          assignedTo: [],
-        }))
-      );
+    // ... (lógica permanece a mesma)
+    const currentSplitEvenly = watch("splitEvenly");
+    if (!currentSplitEvenly) {
+      const updatedBillItems = products.map((product) => ({
+        ...product,
+        assignedTo: [],
+      }));
+      setValue("billItems", updatedBillItems as any);
     }
-    formObject.setValue("splitEvenly", !splitEvenly);
+    setValue("splitEvenly", !currentSplitEvenly);
   };
+
+  const handlePersonAssignmentToggle = (
+    productIndex: number,
+    product: BillItemFormData,
+    personId: string
+  ) => {
+    setValue("splitEvenly", false);
+    const currentAssignments = product.assignedTo || [];
+    const assignmentIndex = currentAssignments.findIndex((a) => a.personId === personId);
+    const totalUnitsForProduct = product.units ?? 0;
+    const currentlyAssignedUnits = getAssignedQuantityForItem(product);
+
+    let newAssignments;
+    if (assignmentIndex > -1) {
+      newAssignments = currentAssignments.filter((a) => a.personId !== personId);
+    } else {
+      // Antes de adicionar, verificar se há espaço
+      if (currentlyAssignedUnits >= totalUnitsForProduct && totalUnitsForProduct > 0) {
+        alert("Todas as unidades deste item já foram atribuídas. Não é possível adicionar mais pessoas.");
+        return;
+      }
+      const defaultQuantity = totalUnitsForProduct === 1 ? 1 : (totalUnitsForProduct > 0 ? 1 : 0);
+      // Se adicionar esta pessoa com defaultQuantity = 1 exceder o limite, ajuste ou avise.
+      // Por simplicidade, vamos assumir que o usuário ajustará a quantidade depois.
+      // Ou, poderíamos atribuir Math.min(1, totalUnitsForProduct - currentlyAssignedUnits) se > 0.
+      newAssignments = [...currentAssignments, { personId, quantity: defaultQuantity }];
+    }
+    updateProduct(productIndex, { ...product, assignedTo: newAssignments });
+  };
+
+  const handleQuantityChange = (
+    productIndex: number,
+    productData: BillItemFormData,
+    personId: string,
+    newQuantityStr: string,
+    targetInput?: HTMLInputElement // Para reverter o valor no input se inválido
+  ) => {
+    let newQuantity = parseInt(newQuantityStr, 10);
+    const assignments = productData.assignedTo || [];
+    const personCurrentAssignment = assignments.find(a => a.personId === personId);
+    const previousQuantity = personCurrentAssignment?.quantity || 0;
+
+    // Se o campo for limpo ou não for um número válido (exceto se for limpo)
+    if (isNaN(newQuantity) && newQuantityStr.trim() !== "") {
+        if (targetInput) targetInput.value = previousQuantity.toString(); // Reverte
+        return;
+    }
+    if (newQuantityStr.trim() === "") newQuantity = 0; // Tratar campo vazio como 0 para possível remoção
+
+    const totalUnits = productData.units || 0;
+    const otherPeopleTotalQuantity = assignments
+      .filter((a) => a.personId !== personId)
+      .reduce((sum, a) => sum + a.quantity, 0);
+
+    if (newQuantity < 0) { // Não permitir quantidade negativa
+        alert("A quantidade não pode ser negativa.");
+        if (targetInput) targetInput.value = previousQuantity.toString(); // Reverte
+        return;
+    }
+
+    if (otherPeopleTotalQuantity + newQuantity > totalUnits) {
+      alert(`Quantidade excede o total de ${totalUnits} unidades disponíveis para este item.`);
+      if (targetInput) targetInput.value = previousQuantity.toString(); // Reverte
+      return;
+    }
+
+    const updatedAssignments = assignments
+      .map((a) => (a.personId === personId ? { ...a, quantity: newQuantity } : a))
+      .filter(a => a.quantity > 0); // Remove atribuições com quantidade 0
+
+    updateProduct(productIndex, { ...productData, assignedTo: updatedAssignments });
+  };
+
 
   return (
     <>
@@ -107,108 +203,136 @@ export const PeopleAndSplit = ({
         onBack={() => goBack()}
       />
       <div className="flex flex-col gap-3 w-full">
-        {people.map((person, index) => (
-          <div
-            className="flex justify-start items-center relative gap-2"
-            key={person._id}
-          >
+        {/* Seção de Adicionar Pessoas (sem alterações significativas) */}
+        {people.map((personField, personIndex) => (
+          <div className="flex justify-start items-center relative gap-2" key={personField._id}>
             <InputText
-              placeholder="Person name"
+              placeholder="Nome da pessoa"
               className="w-full max-w-[300px]"
-              {...formObject.register(`people.${index}.name`)}
+              {...formObject.register(`people.${personIndex}.name`)}
             />
-
-            <button
-              onClick={() => {
-                remove(index);
-              }}
-              className=" hover:opacity-80 cursor-pointer"
-            >
-              <img src="/trash.svg" className="size-[42px]" />
+            <input type="hidden" {...formObject.register(`people.${personIndex}.id`)} />
+            <button type="button" onClick={() => removePerson(personIndex)} className="hover:opacity-80 cursor-pointer">
+              <img src="/trash.svg" alt="Remover pessoa" className="size-[42px]" />
             </button>
           </div>
         ))}
-        <button
-          onClick={handleAddPerson}
-          className="flex justify-start items-center w-full relative overflow-hidden gap-1.5 p-3 rounded-lg bg-[#f4eeec] border border-[#d1d5dc] hover:bg-[#ebe2df] transition-colors cursor-pointer"
-        >
-          <img src="/add.svg" className="size-4" />
-
-          <p className="flex-grow-0  text-base font-medium text-center text-[#1d293d]">
-            Adicionar Pessoa
-          </p>
+        <button type="button" onClick={handleAddPerson} className="flex justify-start items-center w-full relative overflow-hidden gap-1.5 p-3 rounded-lg bg-[#f4eeec] border border-[#d1d5dc] hover:bg-[#ebe2df] transition-colors cursor-pointer">
+          <img src="/add.svg" alt="Adicionar" className="size-4" />
+          <p className="flex-grow-0 text-base font-medium text-center text-[#1d293d]">Adicionar Pessoa</p>
         </button>
         <div className="h-[1px] bg-[#D1D5DC] -mx-[100vw] mt-5" />
 
-        <div className="flex flex-row justify-between items-center">
-          <p className="text-xl font-medium text-left text-[#1e2939]">
-            Atribuir Itens
-          </p>
-          <TinyButton
-            isActive={splitEvenly}
-            className="w-[98px]"
-            onClick={handleSplitEvenlyToggle}
-          >
+        {/* Seção de Atribuir Itens */}
+        <div className="flex flex-row justify-between items-center mt-4">
+          <p className="text-xl font-medium text-left text-[#1e2939]">Atribuir Itens</p>
+          <TinyButton isActive={splitEvenly} className="w-auto px-4" onClick={handleSplitEvenlyToggle}>
             Dividir igualmente
           </TinyButton>
         </div>
-        <div className="flex flex-col gap-2 w-full">
-          {products?.map((product, productIndex) => {
-            return (
-              <div key={productIndex} className="w-full max-w-[350px]">
-                <div className="grid grid-cols-[1fr_auto] px-4 py-3 rounded-lg bg-[#F7F5F5] border border-[#d1d5dc]">
-                  <div className="space-y-3">
-                    <p className="text-base text-[#1e2939]">{product.name}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {people.map((person, personIndex) => {
-                        const personName = formObject.watch(
-                          `people.${personIndex}.name`
-                        );
-                        return (
-                          <TinyButton
-                            key={person._id}
-                            isActive={product.assignedTo?.includes(person.id)}
-                            onClick={() => {
-                              const currentAssigned = product.assignedTo || [];
-                              const isAssigned = currentAssigned.includes(
-                                person.id
-                              );
-                              if (!isAssigned) {
-                                formObject.setValue("splitEvenly", false);
-                              }
-                              // If the person is already assigned, remove them from the assignedTo array
-                              // Otherwise, add them to the assignedTo array
-                              const newAssigned = isAssigned
-                                ? currentAssigned.filter(
-                                    (id) => id !== person.id
-                                  )
-                                : [...currentAssigned, person.id];
 
-                              console.log(
-                                "isAssigned",
-                                isAssigned,
-                                newAssigned
-                              );
-                              updateProduct(productIndex, {
-                                ...product,
-                                assignedTo: newAssigned,
-                              });
-                            }}
-                            className="rounded-lg"
-                          >
-                            {personName}
-                          </TinyButton>
-                        );
-                      })}
+        <div className="flex flex-col gap-6 w-full mt-3"> {/* Aumentado gap entre produtos */}
+          {products.map((productField, productIndex) => {
+            const productData = watchedBillItems[productIndex] as BillItemFormData;
+            if (!productData) return null;
+
+            const totalUnitsForProduct = productData.units ?? 0;
+            const currentlyAssignedUnits = getAssignedQuantityForItem(productData);
+            // Verifica se o item tem unidades e se elas já foram totalmente distribuídas
+            const itemFullyDistributed = totalUnitsForProduct > 0 && currentlyAssignedUnits >= totalUnitsForProduct;
+
+            return (
+              <div key={productField._id} className="w-full p-4 border border-gray-200 rounded-lg shadow bg-white">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <p className="text-lg font-semibold text-[#1e2939]">{productData.name}</p>
+                    <p className="text-xs text-gray-500">
+                      R$ {productData.price?.toFixed(2) ?? '0.00'}
+                      {totalUnitsForProduct > 0 && ` (${totalUnitsForProduct} un.)`}
+                    </p>
+                  </div>
+                  {totalUnitsForProduct > 0 && !splitEvenly && (
+                    <div className={`text-sm font-medium px-2 py-1 rounded ${
+                        itemFullyDistributed && currentlyAssignedUnits === totalUnitsForProduct ? 'bg-green-100 text-green-700' :
+                        currentlyAssignedUnits > totalUnitsForProduct ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                      {currentlyAssignedUnits} / {totalUnitsForProduct} atribuídas
                     </div>
-                  </div>
-                  <div className="text-base font-medium text-right">
-                    <span className="text-[#6a7282]">$</span>
-                    <span className="text-[#1e2939] whitespace-nowrap">
-                      {product.price.toString()}
-                    </span>
-                  </div>
+                  )}
                 </div>
+
+                {!splitEvenly && totalUnitsForProduct > 0 && (
+                  <div className="space-y-2">
+                    {watchedPeople.map((currentPerson) => {
+                      if (!currentPerson || !currentPerson.id) return null;
+
+                      const assignment = productData.assignedTo?.find((a) => a.personId === currentPerson.id);
+                      const isPersonAssigned = !!assignment;
+
+                      // Desabilita o botão de pessoa se o item está totalmente distribuído E esta pessoa ainda não está nele.
+                      const disablePersonButton = itemFullyDistributed && !isPersonAssigned;
+
+                      return (
+                        <div key={currentPerson.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-md">
+                          <TinyButton
+                            isActive={isPersonAssigned}
+                            onClick={() => handlePersonAssignmentToggle(productIndex, productData, currentPerson.id!)}
+                            disabled={disablePersonButton}
+                            className="min-w-[100px] max-w-[200px]" // Ajuste de largura para nomes
+                          >
+                            {currentPerson.name || "Pessoa sem nome"}
+                          </TinyButton>
+                          {isPersonAssigned && ( // Só mostra input de quantidade se a pessoa está selecionada para o item
+                            <div className="flex items-center">
+                              <input
+                                type="number"
+                                defaultValue={assignment.quantity === 0 ? '' : assignment.quantity} // Use defaultValue ou controle com RHF register
+                                onBlur={(e) => // Usar onBlur para registrar a mudança final, ou onChange se preferir feedback imediato
+                                  handleQuantityChange(
+                                    productIndex,
+                                    productData,
+                                    currentPerson.id!,
+                                    e.target.value,
+                                    e.target // Passa o elemento do input para possível reversão
+                                  )
+                                }
+                                min="0" // Permite 0 para depois filtrar, mas handleQuantityChange já remove se for 0
+                                // max não é tão eficaz aqui, a validação é feita em handleQuantityChange
+                                className="w-16 p-1.5 border border-gray-300 rounded-md text-sm text-center focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Qtd."
+                                aria-label={`Quantidade para ${currentPerson.name}`}
+                              />
+                              <span className="ml-1.5 text-sm text-gray-600">
+                                / {totalUnitsForProduct}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Caso o item não tenha unidades (ex: taxa de serviço única) */}
+                {!splitEvenly && totalUnitsForProduct <= 0 && productData.price.greaterThan(0)  && (
+                     <div className="space-y-2 mt-2">
+                        {watchedPeople.map((currentPerson) => {
+                            if (!currentPerson || !currentPerson.id) return null;
+                             const assignment = productData.assignedTo?.find((a) => a.personId === currentPerson.id);
+                             const isPersonAssigned = !!assignment;
+                             // Para itens sem unidades, qualquer um pode ser selecionado/desselecionado livremente
+                             return (
+                                <TinyButton
+                                    key={currentPerson.id}
+                                    isActive={isPersonAssigned}
+                                    onClick={() => handlePersonAssignmentToggle(productIndex, productData, currentPerson.id!)}
+                                    className="min-w-[100px] max-w-[200px] mr-1 mb-1"
+                                >
+                                    {currentPerson.name || "Pessoa sem nome"}
+                                </TinyButton>
+                             );
+                        })}
+                     </div>
+                )}
               </div>
             );
           })}

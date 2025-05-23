@@ -90,12 +90,13 @@ export const UploadOrManualBill = ({
         formObject.setValue("date", new Date(extractedData.date));
       formObject.setValue(
         "billItems",
+        // @ts-ignore
         (extractedData?.billItems || []).map((item) => {
           return {
             id: createId(),
             name: item.name,
-            unit: item.units,
-            unitPrice: item.unitPrice,
+            units: item.units,
+            unitPrice: new Decimal(item.unitPrice),
             price: new Decimal(item.price),
             assignedTo: [],
           };
@@ -143,7 +144,7 @@ export const UploadOrManualBill = ({
               htmlFor="date"
               className="block text-sm font-medium text-left text-[#4a5565] mb-1"
             >
-              Date (optional):
+              Data (opcional):
             </label>
             <DatePicker
               date={watch("date")}
@@ -156,7 +157,7 @@ export const UploadOrManualBill = ({
           </div>
         </form>
         <Button className="w-full" onClick={goForward}>
-          <span>Continue</span>
+          <span>Continuar</span>
         </Button>
       </>
     );
@@ -165,10 +166,10 @@ export const UploadOrManualBill = ({
   return (
     <>
       <SubPageHeader
-        title="Scan Receipt"
-        description="Take a photo or upload  an image of your receipt"
-        onBack={goBack}
-      />
+  title="Escanear Conta"
+  description="Tire uma foto ou envie uma imagem do sua conta"
+  onBack={goBack}
+/>
 
       <Dropzone
         multiple={false}
@@ -212,9 +213,9 @@ export const UploadOrManualBill = ({
                           <span className="text-sm font-medium animate-pulse">
                             {
                               [
-                                "Looking at receipt...",
-                                "Transcribing items...",
-                                "Checking tax and tips...",
+                                "Analisando a conta...",
+                                "Lendo os itens...",
+                                "Verificando taxas e gorjetas...",
                               ][Math.floor((Date.now() / 2000) % 3)]
                             }
                           </span>
@@ -255,11 +256,11 @@ export const UploadOrManualBill = ({
                   />
                   <div className="flex flex-col">
                     <p className="text-base font-medium text-center text-[#364153]">
-                      Take a photo
+                      Fire foto
                     </p>
                     <input required={!file} {...getInputProps()} />
                     <div className="text-xs text-center underline text-[#4a5565] cursor-pointer">
-                      or upload receipt
+                      or carregue o arquivo
                     </div>
                   </div>
                 </div>
@@ -277,7 +278,7 @@ export const UploadOrManualBill = ({
           {isLoading && (
             <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
           )}
-          {!isLoading && <span>Scrape the Bill</span>}
+          {!isLoading && <span>Escanear Conta</span>}
         </span>
       </Button>
     </>

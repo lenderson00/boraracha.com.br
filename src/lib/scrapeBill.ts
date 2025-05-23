@@ -100,7 +100,6 @@ export async function scrapeBill({
       throw new Error("Estrutura de resposta inválida ou ausente");
     }
 
-    console.log(result.object)
     return result.object;
   } catch (error: any) {
     console.error("Erro ao extrair informações da nota fiscal:", error.message || error);

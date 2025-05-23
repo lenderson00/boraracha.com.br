@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Toaster } from "@/components/ui/sonner";
 
 const instrumentSans = Instrument_Sans({
   variable: "--font-instrument-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
             {children}
             {/* <Footer /> */}
           </div>
+          <Toaster />
         </NuqsAdapter>
       </body>
     </html>

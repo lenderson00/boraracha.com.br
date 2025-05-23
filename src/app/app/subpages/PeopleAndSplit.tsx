@@ -5,6 +5,7 @@ import { BillForm, BillItemFormData, PersonFormData } from "../types";
 import { InputText } from "../InputText"; // Assumindo que este é um componente de input de texto estilizado
 import { useMemo, useCallback } from "react";
 import { createId } from "../utils";
+import { cn } from "@/lib/utils";
 // import Decimal from "decimal.js"; // Não diretamente usado nesta tela, mas nos tipos
 
 // TinyButton component (permanece o mesmo, mas adicione type="button")
@@ -98,11 +99,11 @@ export const PeopleAndSplit = ({
       const productUnits = product.units ?? 0;
       if (productUnits > 0) {
         const assignedTo = product.assignedTo || [];
-        if (assignedTo.length === 0 && product.price.greaterThan(0)) return true;
+        if (assignedTo.length === 0 && (product.price instanceof Decimal ? product.price : new Decimal(product.price || 0)).greaterThan(0)) return true;
         const totalAssignedQuantity = getAssignedQuantityForItem(product);
         if (totalAssignedQuantity !== productUnits) return true;
         if (assignedTo.some(a => a.quantity <= 0)) return true;
-      } else if (product.price.greaterThan(0)) {
+      } else if ((product.price instanceof Decimal ? product.price : new Decimal(product.price || 0)).greaterThan(0)) {
         if (!product.assignedTo || product.assignedTo.length === 0) return true;
       }
     }
@@ -139,7 +140,7 @@ export const PeopleAndSplit = ({
     } else {
       // Antes de adicionar, verificar se há espaço
       if (currentlyAssignedUnits >= totalUnitsForProduct && totalUnitsForProduct > 0) {
-        alert("Todas as unidades deste item já foram atribuídas. Não é possível adicionar mais pessoas.");
+        toast.error("Todas as unidades deste item já foram atribuídas. Não é possível adicionar mais pessoas.");
         return;
       }
       const defaultQuantity = totalUnitsForProduct === 1 ? 1 : (totalUnitsForProduct > 0 ? 1 : 0);
@@ -176,13 +177,13 @@ export const PeopleAndSplit = ({
       .reduce((sum, a) => sum + a.quantity, 0);
 
     if (newQuantity < 0) { // Não permitir quantidade negativa
-        alert("A quantidade não pode ser negativa.");
+        toast.error("A quantidade não pode ser negativa.");
         if (targetInput) targetInput.value = previousQuantity.toString(); // Reverte
         return;
     }
 
     if (otherPeopleTotalQuantity + newQuantity > totalUnits) {
-      alert(`Quantidade excede o total de ${totalUnits} unidades disponíveis para este item.`);
+      toast.error(`Quantidade excede o total de ${totalUnits} unidades disponíveis para este item.`);
       if (targetInput) targetInput.value = previousQuantity.toString(); // Reverte
       return;
     }
@@ -242,23 +243,28 @@ export const PeopleAndSplit = ({
             const itemFullyDistributed = totalUnitsForProduct > 0 && currentlyAssignedUnits >= totalUnitsForProduct;
 
             return (
-              <div key={productField._id} className="w-full p-4 border border-gray-200 rounded-lg shadow bg-white">
-                <div className="flex justify-between items-center mb-3">
-                  <div>
-                    <p className="text-lg font-semibold text-[#1e2939]">{productData.name}</p>
-                    <p className="text-xs text-gray-500">
-                      R$ {productData.price?.toFixed(2) ?? '0.00'}
-                      {totalUnitsForProduct > 0 && ` (${totalUnitsForProduct} un.)`}
+              <div key={productField._id} 
+              className={cn("w-full p-4 border-2 border-gray-200 rounded-lg shadow bg-white",
+                 itemFullyDistributed && currentlyAssignedUnits === totalUnitsForProduct && "border-green-400",
+                 currentlyAssignedUnits > totalUnitsForProduct && "border-red-400"
+              )}
+              >
+                <div className={cn("flex justify-between items-center mb-3", )}>
+                  <div className="flex w-full items-center  justify-between">
+                    <p className="text-sm font-semibold text-[#1e2939]">{productData.name}</p>
+                    <p className="text-lg text-gray-500 font-bold">
+                    R$ { (productData.price instanceof Decimal ? productData.price : new Decimal(productData.price || 0)).toFixed(2) }
+                      <span className="text-sm font-normal">{totalUnitsForProduct > 0 && ` (${totalUnitsForProduct} un.)`}</span>
                     </p>
                   </div>
-                  {totalUnitsForProduct > 0 && !splitEvenly && (
+                  {/* {totalUnitsForProduct > 0 && !splitEvenly && (
                     <div className={`text-sm font-medium px-2 py-1 rounded ${
                         itemFullyDistributed && currentlyAssignedUnits === totalUnitsForProduct ? 'bg-green-100 text-green-700' :
                         currentlyAssignedUnits > totalUnitsForProduct ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                       }`}>
                       {currentlyAssignedUnits} / {totalUnitsForProduct} atribuídas
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 {!splitEvenly && totalUnitsForProduct > 0 && (
@@ -283,29 +289,16 @@ export const PeopleAndSplit = ({
                             {currentPerson.name || "Pessoa sem nome"}
                           </TinyButton>
                           {isPersonAssigned && ( // Só mostra input de quantidade se a pessoa está selecionada para o item
-                            <div className="flex items-center">
-                              <input
-                                type="number"
-                                defaultValue={assignment.quantity === 0 ? '' : assignment.quantity} // Use defaultValue ou controle com RHF register
-                                onBlur={(e) => // Usar onBlur para registrar a mudança final, ou onChange se preferir feedback imediato
-                                  handleQuantityChange(
-                                    productIndex,
-                                    productData,
-                                    currentPerson.id!,
-                                    e.target.value,
-                                    e.target // Passa o elemento do input para possível reversão
-                                  )
-                                }
-                                min="0" // Permite 0 para depois filtrar, mas handleQuantityChange já remove se for 0
-                                // max não é tão eficaz aqui, a validação é feita em handleQuantityChange
-                                className="w-16 p-1.5 border border-gray-300 rounded-md text-sm text-center focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Qtd."
-                                aria-label={`Quantidade para ${currentPerson.name}`}
-                              />
-                              <span className="ml-1.5 text-sm text-gray-600">
-                                / {totalUnitsForProduct}
-                              </span>
-                            </div>
+                            <QuantityStepper
+                            quantity={assignment.quantity}
+                            max={totalUnitsForProduct}
+                            productIndex={productIndex}
+                            productData={productData}
+                            personId={currentPerson.id!}
+                            onChange={(productIndex, productData, personId, value) =>
+                              handleQuantityChange(productIndex, productData, personId, value)
+                            }
+                          />
                           )}
                         </div>
                       );
@@ -313,7 +306,8 @@ export const PeopleAndSplit = ({
                   </div>
                 )}
                 {/* Caso o item não tenha unidades (ex: taxa de serviço única) */}
-                {!splitEvenly && totalUnitsForProduct <= 0 && productData.price.greaterThan(0)  && (
+
+                {!splitEvenly && totalUnitsForProduct <= 0 && (productData.price instanceof Decimal ? productData.price : new Decimal(productData.price || 0)).greaterThan(0)  && (
                      <div className="space-y-2 mt-2">
                         {watchedPeople.map((currentPerson) => {
                             if (!currentPerson || !currentPerson.id) return null;
@@ -344,3 +338,66 @@ export const PeopleAndSplit = ({
     </>
   );
 };
+
+import { Minus, Plus } from "lucide-react"
+import Decimal from "decimal.js";
+import { toast } from "sonner";
+
+type StepperProps = {
+  quantity: number
+  max: number
+  productIndex: number
+  productData: any
+  personId: string
+  onChange: (productIndex: number, productData: any, personId: string, value: string) => void
+}
+
+export function QuantityStepper({
+  quantity,
+  max,
+  productIndex,
+  productData,
+  personId,
+  onChange,
+}: StepperProps) {
+  const handleChange = (newQty: number) => {
+    if (newQty < 0 || newQty > max) return
+    onChange(productIndex, productData, personId, String(newQty))
+  }
+
+  if (max === 1 ) {
+    return null
+  }
+
+  return (
+    <div className="flex items-center space-x-2">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => handleChange(quantity - 1)}
+        disabled={quantity <= 0}
+      >
+        <Minus className="w-4 h-4" />
+      </Button>
+
+      <InputText
+        type="number"
+        value={quantity || ""}
+        onChange={(e) => handleChange(Number(e.target.value))}
+        className="w-16 text-center"
+        min={0}
+        max={max}
+        placeholder="Qtd."
+      />
+
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => handleChange(quantity + 1)}
+        disabled={quantity >= max}
+      >
+        <Plus className="w-4 h-4" />
+      </Button>
+    </div>
+  )
+}

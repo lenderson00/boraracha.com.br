@@ -1,12 +1,14 @@
 import SubPageHeader from "@/components/SubPageHeader";
 import { Button } from "@/components/ui/button";
-import { UseFormReturn, useFieldArray, useWatch } from "react-hook-form";
+import { UseFormReturn, useFieldArray } from "react-hook-form";
 import { BillForm, BillItemFormData, PersonFormData } from "../types";
 import { InputText } from "../InputText"; // Assumindo que este é um componente de input de texto estilizado
 import { useMemo, useCallback } from "react";
 import { createId } from "../utils";
 import { cn } from "@/lib/utils";
-// import Decimal from "decimal.js"; // Não diretamente usado nesta tela, mas nos tipos
+import Decimal from "decimal.js";
+import { toast } from "sonner";
+import { QuantityStepper } from "@/components/ui/stepper";
 
 // TinyButton component (permanece o mesmo, mas adicione type="button")
 const TinyButton = ({
@@ -27,8 +29,8 @@ const TinyButton = ({
       type="button" // Importante para evitar submissão de formulário
       onClick={onClick}
       disabled={disabled}
-      className={`flex justify-center w-fit items-center h-[30px] truncate relative overflow-hidden gap-1.5 px-3 py-1.5 rounded border-[0.7px] border-[#d1d5dc] cursor-pointer transition-colors
-        ${disabled ? "bg-gray-200 text-gray-500 cursor-not-allowed" : isActive ? "bg-[#6a2000] text-white" : "bg-white text-[#1e2939] hover:bg-gray-50"}
+      className={`flex justify-center w-fit items-center h-[30px] truncate relative overflow-hidden gap-1.5 px-3 py-1.5 font-bold rounded border-[0.7px] border-[#d1d5dc] cursor-pointer transition-colors
+        ${disabled ? "bg-gray-200 text-gray-500 cursor-not-allowed" : isActive ? "bg-emerald-600 text-white " : "bg-white text-[#1e2939] hover:bg-gray-50"}
         ${className}`}
     >
       <p
@@ -268,7 +270,7 @@ export const PeopleAndSplit = ({
                 </div>
 
                 {!splitEvenly && totalUnitsForProduct > 0 && (
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     {watchedPeople.map((currentPerson) => {
                       if (!currentPerson || !currentPerson.id) return null;
 
@@ -279,12 +281,12 @@ export const PeopleAndSplit = ({
                       const disablePersonButton = itemFullyDistributed && !isPersonAssigned;
 
                       return (
-                        <div key={currentPerson.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-md">
+                        <div key={currentPerson.id} className="flex items-center gap-2 h-10 justify-between ">
                           <TinyButton
                             isActive={isPersonAssigned}
                             onClick={() => handlePersonAssignmentToggle(productIndex, productData, currentPerson.id!)}
                             disabled={disablePersonButton}
-                            className="min-w-[100px] max-w-[200px]" // Ajuste de largura para nomes
+                            className="min-w-[100px] max-w-[200px] select-none" // Ajuste de largura para nomes
                           >
                             {currentPerson.name || "Pessoa sem nome"}
                           </TinyButton>
@@ -338,66 +340,3 @@ export const PeopleAndSplit = ({
     </>
   );
 };
-
-import { Minus, Plus } from "lucide-react"
-import Decimal from "decimal.js";
-import { toast } from "sonner";
-
-type StepperProps = {
-  quantity: number
-  max: number
-  productIndex: number
-  productData: any
-  personId: string
-  onChange: (productIndex: number, productData: any, personId: string, value: string) => void
-}
-
-export function QuantityStepper({
-  quantity,
-  max,
-  productIndex,
-  productData,
-  personId,
-  onChange,
-}: StepperProps) {
-  const handleChange = (newQty: number) => {
-    if (newQty < 0 || newQty > max) return
-    onChange(productIndex, productData, personId, String(newQty))
-  }
-
-  if (max === 1 ) {
-    return null
-  }
-
-  return (
-    <div className="flex items-center space-x-2">
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => handleChange(quantity - 1)}
-        disabled={quantity <= 0}
-      >
-        <Minus className="w-4 h-4" />
-      </Button>
-
-      <InputText
-        type="number"
-        value={quantity || ""}
-        onChange={(e) => handleChange(Number(e.target.value))}
-        className="w-16 text-center"
-        min={0}
-        max={max}
-        placeholder="Qtd."
-      />
-
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => handleChange(quantity + 1)}
-        disabled={quantity >= max}
-      >
-        <Plus className="w-4 h-4" />
-      </Button>
-    </div>
-  )
-}

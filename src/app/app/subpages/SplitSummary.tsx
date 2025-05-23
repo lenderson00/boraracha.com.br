@@ -150,10 +150,10 @@ export const SplitSummary = ({
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    const hasShownConfetti = sessionStorage.getItem("hasShownConfetti_v2"); // Mudei a chave para resetar em nova versão
+    const hasShownConfetti = sessionStorage.getItem("hasShownConfetti"); // Mudei a chave para resetar em nova versão
     if (!hasShownConfetti) {
       setShowConfetti(true);
-      sessionStorage.setItem("hasShownConfetti_v2", "true");
+      sessionStorage.setItem("hasShownConfetti", "true");
     }
   }, []);
 
@@ -215,23 +215,26 @@ Total da Conta: R$ ${grandTotal.toFixed(2)}`;
           </div>
         ))}
       </div>
-      <Button
-        className="w-full mt-6"
-        onClick={handleCopyToClipboard}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-          <path d="M10.5 11.5V13.75C10.5 14.164 10.164 14.5 9.75 14.5H3.25C3.05109 14.5 2.86032 14.421 2.71967 14.2803C2.57902 14.1397 2.5 13.9489 2.5 13.75V5.25C2.5 4.836 2.836 4.5 3.25 4.5H4.5M10.5 11.5H12.75C13.164 11.5 13.5 11.164 13.5 10.75V7.5C13.5 4.52667 11.338 2.05933 8.5 1.58267M10.5 11.5H6.25C6.05109 11.5 5.86032 11.421 5.71967 11.2803C5.57902 11.1397 5.5 10.9489 5.5 10.75V4.58266M5.5 4.58266C5.16954 4.52742 4.83505 4.49977 4.5 4.5M5.5 4.58266V2.25C5.5 1.836 5.836 1.5 6.25 1.5H7.5C7.83505 1.49977 8.16954 1.52742 8.5 1.58267M13.5 7.5V9M8.5 1.58267C9.02475 1.68455 9.51596 1.87753 9.95217 2.15071C10.3884 2.42389 10.7616 2.77164 11.0521 3.1766C11.3426 3.58157 11.5447 4.03607 11.649 4.51503C11.7532 4.99398 11.7576 5.4893 11.6621 5.97432" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        <span>Compartilhar Resumo</span>
-      </Button>
-      <Link href="/" className="w-full">
-        <Button className="w-full mt-3" variant="secondary">
-          <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-            <path d="M2 7.99999L7.96933 2.02999C8.26267 1.73732 8.73733 1.73732 9.03 2.02999L15 7.99999M3.5 6.49999V13.25C3.5 13.664 3.836 14 4.25 14H7V10.75C7 10.336 7.336 9.99999 7.75 9.99999H9.25C9.664 9.99999 10 10.336 10 10.75V14H12.75C13.164 14 13.5 13.664 13.5 13.25V6.49999" stroke="#4A5565" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <div className="flex flex-col gap-2 w-full  mt-4">
+
+        <Button
+          className="w-full"
+          onClick={handleCopyToClipboard}
+          >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+            <path d="M10.5 11.5V13.75C10.5 14.164 10.164 14.5 9.75 14.5H3.25C3.05109 14.5 2.86032 14.421 2.71967 14.2803C2.57902 14.1397 2.5 13.9489 2.5 13.75V5.25C2.5 4.836 2.836 4.5 3.25 4.5H4.5M10.5 11.5H12.75C13.164 11.5 13.5 11.164 13.5 10.75V7.5C13.5 4.52667 11.338 2.05933 8.5 1.58267M10.5 11.5H6.25C6.05109 11.5 5.86032 11.421 5.71967 11.2803C5.57902 11.1397 5.5 10.9489 5.5 10.75V4.58266M5.5 4.58266C5.16954 4.52742 4.83505 4.49977 4.5 4.5M5.5 4.58266V2.25C5.5 1.836 5.836 1.5 6.25 1.5H7.5C7.83505 1.49977 8.16954 1.52742 8.5 1.58267M13.5 7.5V9M8.5 1.58267C9.02475 1.68455 9.51596 1.87753 9.95217 2.15071C10.3884 2.42389 10.7616 2.77164 11.0521 3.1766C11.3426 3.58157 11.5447 4.03607 11.649 4.51503C11.7532 4.99398 11.7576 5.4893 11.6621 5.97432" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span>Voltar para Início</span>
+          <span>Compartilhar Resumo</span>
         </Button>
-      </Link>
+        <Link href="/" className="w-full">
+          <Button className="w-full " variant="secondary">
+            <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+              <path d="M2 7.99999L7.96933 2.02999C8.26267 1.73732 8.73733 1.73732 9.03 2.02999L15 7.99999M3.5 6.49999V13.25C3.5 13.664 3.836 14 4.25 14H7V10.75C7 10.336 7.336 9.99999 7.75 9.99999H9.25C9.664 9.99999 10 10.336 10 10.75V14H12.75C13.164 14 13.5 13.664 13.5 13.25V6.49999" stroke="#4A5565" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span>Voltar para Início</span>
+          </Button>
+        </Link>
+        </div>
     </>
   );
 };

@@ -1,33 +1,46 @@
 import { z } from "zod";
-import { togetherBaseClient } from "./clients";
 import zodToJsonSchema from "zod-to-json-schema";
 import dedent from "dedent";
+import { generateObject } from "ai"
+import { openai } from "@ai-sdk/openai"
+
+const model = openai("gpt-4.1-mini")
 
 export const extractSchema = z.object({
   businessName: z
     .string()
+    .nullable()
     .optional()
     .describe("Name of the business where the bill was created"),
-  date: z.string().optional().describe("Date when the bill was created"),
+  date: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Date of the receipt in YYYY-MM-DD format. Return null if the date is missing or unreadable"),
   billItems: z
     .array(
       z.object({
-        name: z.string().describe("Name of the item"),
-        price: z.number().describe("Price of the item in decimal format"),
+        name: z.string().describe("Name or description of the item as shown on the receipt"),
+        units: z.number().describe("Quantity or number of units purchased for this item"),
+        unitPrice: z.number().describe("Price per unit of the item in decimal format"),
+        price: z.number().describe("Total price for this item (units × unitPrice), in decimal format"),
       })
     )
     .describe("List of items in the bill"),
   tax: z
     .number()
+    .nullable()
     .optional()
-    .describe("Tax amount, not percentage we need money amount"),
+    .describe("Any additional monetary charge such as tax, service fee, or delivery fee. Do not extract percentages, only actual money amounts")
+  ,
   tip: z
     .number()
+    .nullable()
     .optional()
-    .describe(
-      "Tip or Gratuity amount, not percentage we need money amount and if multiple tips are shown just output the medium one"
-    ),
+    .describe("Service charge or tip (usually 10% in Brazil). Only extract the amount in currency, never the percentage. If more than one value is shown, return the medium one")
+
 });
+
 
 export type ExtractSchemaType = z.infer<typeof extractSchema>;
 
@@ -53,37 +66,44 @@ const systemPrompt = dedent`
 
 export async function scrapeBill({
   billUrl,
-  model = "meta-llama/Llama-4-Scout-17B-16E-Instruct",
 }: {
   billUrl: string;
-  model?: string;
 }): Promise<ExtractSchemaType> {
-  const jsonSchema = zodToJsonSchema(extractSchema, {
-    target: "openAi",
-  });
 
-  const extract = await togetherBaseClient.chat.completions.create({
-    model: model,
-    messages: [
+  try {
+    const messages = [
       {
         role: "user",
         content: [
-          { type: "text", text: systemPrompt },
           {
-            type: "image_url",
-            image_url: {
-              url: billUrl,
+            type: "image",
+            image: billUrl,
+            providerOptions: {
+              openai: { imageDetail: "high" },
             },
           },
         ],
       },
-    ],
-    response_format: { type: "json_object", schema: jsonSchema },
-  });
+    ];
 
-  if (extract?.choices?.[0]?.message?.content) {
-    const output = JSON.parse(extract.choices[0].message.content);
-    return output;
+    const result = await generateObject({
+      model,
+      schema: extractSchema,
+      system: systemPrompt,
+      // @ts-ignore
+      messages,
+    });
+
+    // Verifica se o resultado realmente possui o objeto esperado
+    if (!result?.object || typeof result.object !== "object") {
+      console.log(result)
+      throw new Error("Estrutura de resposta inválida ou ausente");
+    }
+
+    console.log(result.object)
+    return result.object;
+  } catch (error: any) {
+    console.error("Erro ao extrair informações da nota fiscal:", error.message || error);
+    throw new Error("Não foi possível extrair os dados do recibo. Verifique a imagem e tente novamente.");
   }
-  throw new Error("No content returned from Llama 4 vision");
 }

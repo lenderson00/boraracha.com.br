@@ -24,7 +24,27 @@ export const UploadOrManualBill = ({
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { uploadToS3 } = useS3Upload();
+
+  const uploadToBunny = async () => {
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append("file", file);
+  
+    const response = await fetch("/api/bunny", {
+      method: "POST",
+      body: formData,
+    });
+  
+    if (!response.ok) {
+      throw new Error("Erro ao fazer upload no BunnyCDN");
+    }
+  
+    const data = await response.json();
+    return data.url as string; // URL do arquivo no CDN retornada pela API
+  };
+  
+
   const { register, watch } = formObject;
 
   useEffect(() => {
@@ -49,14 +69,14 @@ export const UploadOrManualBill = ({
     setIsLoading(true);
     localStorage.removeItem("billFormData");
     try {
-      const uploadedBill = await uploadToS3(file);
+      const uploadedUrl = await uploadToBunny();;
 
-      uploadedBill.url;
+      console.log(uploadedUrl)
 
       const response = await fetch("/api/vision", {
         method: "POST",
         body: JSON.stringify({
-          billUrl: uploadedBill.url,
+          billUrl: uploadedUrl,
         }),
         headers: {
           "Content-Type": "application/json",

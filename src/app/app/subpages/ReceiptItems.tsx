@@ -51,8 +51,8 @@ export const ReceiptItems = ({
   return (
     <>
       <SubPageHeader
-        title="Receipt Items"
-        description="List all the items on your receipt"
+        title="O que tem na conta?"
+         description="Adicione tudo que apareceu na conta"
         onBack={() => goBack()}
       />
       <div className="flex flex-col gap-3">
@@ -85,13 +85,13 @@ export const ReceiptItems = ({
         >
           <img src="/add.svg" className="size-4" />
           <p className="flex-grow-0  text-base font-medium text-center text-[#1d293d]">
-            Add Item
+            Adicionar Item
           </p>
         </button>
         <div className="h-[1px] bg-[#D1D5DC] -mx-[100vw] mt-5" />
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-left text-[#1e2939]">Tip:</p>
+            <p className="text-sm text-left text-[#1e2939]">Gorjeta:</p>
             <InputPrice
               value={tip}
               onChange={(value) => formObject.setValue("tip", value)}
@@ -100,7 +100,7 @@ export const ReceiptItems = ({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-left text-[#1e2939]">Tax:</p>
+            <p className="text-sm text-left text-[#1e2939]">Taxa:</p>
             <InputPrice
               value={tax}
               onChange={(value) => formObject.setValue("tax", value)}
@@ -111,7 +111,7 @@ export const ReceiptItems = ({
         </div>
         <div className="flex flex-row gap-2 items-end justify-end">
           <p className="text-sm text-right text-[#1e2939]">
-            Total: <span className="font-medium text-[#6a7282]">$ </span>
+            Total: <span className="font-medium text-[#6a7282]">R$ </span>
           </p>
           <p className="text-2xl font-medium text-right text-[#1e2939] -mb-0.5">
             {total.toFixed(2)}
@@ -119,7 +119,7 @@ export const ReceiptItems = ({
         </div>
       </div>
       <Button className="w-full mt-6" onClick={goForward} disabled={isDisabled}>
-        <span>Continue</span>
+        <span>Continuar</span>
       </Button>
     </>
   );

@@ -30,7 +30,7 @@ export default function SubPageHeader({
             strokeLinejoin="round"
           />
         </svg>
-        Back
+        Voltar
       </div>
       <h1 className="text-2xl font-medium text-[#1e2939]">{title}</h1>
       {description && (

@@ -7,10 +7,10 @@ export default function Header() {
         <img src="/logo.svg" alt="Logo" className="h-6 w-6 sm:h-8 sm:w-8" />
         <p className="hidden sm:block text-xl font-bold text-left mt-0.5">
           <span className="text-xl font-bold text-left text-[#1e2939]">
-            Bill
+            Conta
           </span>
           <span className="text-xl font-bold text-left text-[#6a2000]">
-            Split
+            Dividir
           </span>
         </p>
       </Link>

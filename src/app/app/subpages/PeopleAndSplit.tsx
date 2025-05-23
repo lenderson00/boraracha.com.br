@@ -20,7 +20,7 @@ const TinyButton = ({
   return (
     <button
       onClick={onClick}
-      className={`flex justify-center items-center h-[30px] truncate relative overflow-hidden gap-1.5 p-3 rounded border-[0.7px] border-[#d1d5dc] cursor-pointer transition-colors ${
+      className={`flex justify-center w-fit items-center h-[30px] truncate relative overflow-hidden gap-1.5 p-3 rounded border-[0.7px] border-[#d1d5dc] cursor-pointer transition-colors ${
         isActive ? "bg-[#6a2000]" : "bg-white"
       } ${className}`}
     >
@@ -102,8 +102,8 @@ export const PeopleAndSplit = ({
   return (
     <>
       <SubPageHeader
-        title="Who's Splitting?"
-        description="Type all the names and assign items"
+        title="Quem vai dividir?"
+        description="Digite todos os nomes e atribua os itens"
         onBack={() => goBack()}
       />
       <div className="flex flex-col gap-3 w-full">
@@ -135,21 +135,21 @@ export const PeopleAndSplit = ({
           <img src="/add.svg" className="size-4" />
 
           <p className="flex-grow-0  text-base font-medium text-center text-[#1d293d]">
-            Add Person
+            Adicionar Pessoa
           </p>
         </button>
         <div className="h-[1px] bg-[#D1D5DC] -mx-[100vw] mt-5" />
 
         <div className="flex flex-row justify-between items-center">
           <p className="text-xl font-medium text-left text-[#1e2939]">
-            Assign Items
+            Atribuir Itens
           </p>
           <TinyButton
             isActive={splitEvenly}
             className="w-[98px]"
             onClick={handleSplitEvenlyToggle}
           >
-            Split evenly
+            Dividir igualmente
           </TinyButton>
         </div>
         <div className="flex flex-col gap-2 w-full">
@@ -215,7 +215,7 @@ export const PeopleAndSplit = ({
         </div>
       </div>
       <Button className="w-full mt-6" onClick={goForward} disabled={isDisabled}>
-        <span>Continue</span>
+        <span>Continuar</span>
       </Button>
     </>
   );

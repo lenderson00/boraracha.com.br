@@ -85,7 +85,7 @@ export const UploadOrManualBill = ({
 
       const extractedData = (await response.json()) as ExtractSchemaType;
 
-      formObject.setValue("businessName", extractedData.businessName);
+      formObject.setValue("businessName", extractedData.businessName || "Sem Nome");
       extractedData.date &&
         formObject.setValue("date", new Date(extractedData.date));
       formObject.setValue(
@@ -94,6 +94,8 @@ export const UploadOrManualBill = ({
           return {
             id: createId(),
             name: item.name,
+            unit: item.units,
+            unitPrice: item.unitPrice,
             price: new Decimal(item.price),
             assignedTo: [],
           };

@@ -129,8 +129,8 @@ export const SplitSummary = ({
         />
       )}
       <SubPageHeader
-        title="Split Summary"
-        description="Here is how you should split this bill:"
+        title="Conta Dividida!"
+        description="Veja quem paga o quê:"
         onBack={() => goBack()}
       />
       <div className="flex flex-col gap-3 w-full">
@@ -144,7 +144,7 @@ export const SplitSummary = ({
             </p>
             <p className="font-medium text-right">
               <span className="text-base font-medium text-right text-[#6a7282]">
-                $
+                R$
               </span>
               <span className="text-base font-medium text-right text-[#1e2939]">
                 {" "}
@@ -196,7 +196,7 @@ Total: ${total}`;
           />
         </svg>
 
-        <span>Share</span>
+        <span>Compartilhar</span>
       </Button>
       <Link href="/" className="w-full">
         <Button className="w-full" variant="secondary">
@@ -216,7 +216,7 @@ Total: ${total}`;
             />
           </svg>
 
-          <span>Back Home</span>
+          <span>Voltar para Início</span>
         </Button>
       </Link>
     </>
